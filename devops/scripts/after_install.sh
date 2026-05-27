@@ -4,13 +4,17 @@ echo "=== AfterInstall: Building new release ==="
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RELEASE_DIR="/opt/welllabs/releases/$TIMESTAMP"
-DEPLOY_SRC="/tmp/welllabs-deploy"
+
+# Derive the deployment archive root from this script's own location:
+# Script is at <archive>/devops/scripts/after_install.sh  →  go up 2 levels.
+DEPLOY_ARCHIVE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # ──────────────────────────────────────
 # 1. Copy source to new release directory
 # ──────────────────────────────────────
-echo "[1/7] Creating release $TIMESTAMP..."
-cp -r "$DEPLOY_SRC" "$RELEASE_DIR"
+echo "[1/7] Creating release $TIMESTAMP (archive: $DEPLOY_ARCHIVE)..."
+mkdir -p "$RELEASE_DIR"
+cp -r "$DEPLOY_ARCHIVE/." "$RELEASE_DIR/"
 
 # ──────────────────────────────────────
 # 2. Link shared .env file
