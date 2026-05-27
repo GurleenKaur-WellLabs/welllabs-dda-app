@@ -13,10 +13,20 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import environ
 import os
+import sys
+import glob
 
-#GIS GDAL Library path
-GDAL_LIBRARY_PATH = '/opt/homebrew/opt/gdal/lib/libgdal.dylib'
-GEOS_LIBRARY_PATH = '/opt/homebrew/opt/geos/lib/libgeos_c.dylib'
+#GIS GDAL / GEOS library paths — platform-aware
+if sys.platform == 'darwin':
+    # Local development on macOS (Homebrew)
+    GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH', '/opt/homebrew/opt/gdal/lib/libgdal.dylib')
+    GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH', '/opt/homebrew/opt/geos/lib/libgeos_c.dylib')
+else:
+    # Linux (EC2 / Ubuntu) — auto-discover the installed .so
+    _gdal = sorted(glob.glob('/usr/lib/x86_64-linux-gnu/libgdal.so*'))
+    _geos = sorted(glob.glob('/usr/lib/x86_64-linux-gnu/libgeos_c.so*'))
+    GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH', _gdal[0] if _gdal else '')
+    GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH', _geos[0] if _geos else '')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

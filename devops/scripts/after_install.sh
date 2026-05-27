@@ -42,7 +42,14 @@ source venv/bin/activate
 
 echo "[4/7] Installing Python dependencies..."
 pip install --upgrade pip -q
-pip install -r requirements.txt -q
+
+# GDAL pip package must match the system libgdal version exactly
+GDAL_SYS_VERSION=$(gdal-config --version)
+echo "Installing GDAL==$GDAL_SYS_VERSION (matching system library)..."
+pip install GDAL==$GDAL_SYS_VERSION -q
+
+# Install remaining requirements (skip the GDAL line to avoid version conflict)
+grep -iv "^gdal" requirements.txt | pip install -r /dev/stdin -q
 
 # ──────────────────────────────────────
 # 4. Database Setup & Django migrations
