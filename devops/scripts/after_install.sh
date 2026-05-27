@@ -15,7 +15,7 @@ cp -r "$DEPLOY_SRC" "$RELEASE_DIR"
 # ──────────────────────────────────────
 # 2. Link shared .env file
 # ──────────────────────────────────────
-# test
+# testing script
 echo "[2/7] Linking shared .env..."
 ln -sf /opt/welllabs/shared/.env "$RELEASE_DIR/backend/.env"
 
