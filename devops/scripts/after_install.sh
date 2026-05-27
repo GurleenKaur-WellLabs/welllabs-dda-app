@@ -77,7 +77,6 @@ deactivate
 echo "[6/7] Building SvelteKit frontend..."
 cd "$RELEASE_DIR/frontend"
 
-# Node is installed system-wide via NodeSource in before_install.sh
 export PATH="/usr/local/bin:/usr/bin:$PATH"
 
 NPM_BIN=$(command -v npm || true)
@@ -87,7 +86,9 @@ if [ -z "$NPM_BIN" ]; then
 fi
 echo "Using npm: $NPM_BIN ($(npm --version)), Node: $(node --version)"
 
-npm ci                  # exact lockfile install — correct for CI/CD
+# Use npm install (not npm ci) to handle cross-platform lockfile differences.
+# The lockfile may be missing linux-x64 rollup binaries if generated on macOS/Windows.
+npm install --os=linux --cpu=x64
 npm run build
 
 # ──────────────────────────────────────
@@ -95,21 +96,28 @@ npm run build
 # ──────────────────────────────────────
 echo "[7/7] Installing Nginx & systemd configs..."
 
-# Validate nginx config BEFORE overwriting the live one
-cp "$RELEASE_DIR/devops/nginx/welllabs.conf" /etc/nginx/conf.d/welllabs.conf.new
-if ! nginx -t -c /etc/nginx/conf.d/welllabs.conf.new 2>/dev/null; then
-  # Fall back: try validation via temp include (works on most nginx builds)
-  nginx -t -c "$RELEASE_DIR/devops/nginx/welllabs.conf"
-fi
-mv /etc/nginx/conf.d/welllabs.conf.new /etc/nginx/conf.d/welllabs.conf
+# Back up existing nginx config in case the new one is invalid
+cp /etc/nginx/conf.d/welllabs.conf /etc/nginx/conf.d/welllabs.conf.bak 2>/dev/null || true
+
+# Install new config
+cp "$RELEASE_DIR/devops/nginx/welllabs.conf" /etc/nginx/conf.d/welllabs.conf
 rm -f /etc/nginx/conf.d/default.conf
+
+# Validate using the real nginx.conf (which includes conf.d/) — NOT -c on the file directly
+# because conf.d files contain server{} blocks which are only valid inside http{} context.
+if ! nginx -t; then
+    echo "ERROR: Nginx config invalid — restoring previous config..."
+    mv /etc/nginx/conf.d/welllabs.conf.bak /etc/nginx/conf.d/welllabs.conf
+    exit 1
+fi
+rm -f /etc/nginx/conf.d/welllabs.conf.bak
 
 # Systemd service units
 cp "$RELEASE_DIR/devops/systemd/welllabs-backend.service" /etc/systemd/system/
 cp "$RELEASE_DIR/devops/systemd/welllabs-frontend.service" /etc/systemd/system/
 systemctl daemon-reload
 
-# ────────────────────────────────────── 
+# ──────────────────────────────────────
 # 7. Symlink swap — atomic
 # ──────────────────────────────────────
 echo ">>> Swapping symlink to new release: $TIMESTAMP"
