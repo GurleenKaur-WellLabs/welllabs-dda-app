@@ -24,7 +24,16 @@ ln -sf /opt/welllabs/shared/.env "$RELEASE_DIR/backend/.env"
 # ──────────────────────────────────────
 echo "[3/7] Setting up Python virtual environment..."
 cd "$RELEASE_DIR/backend"
-python3.13 -m venv venv
+
+# Detect the best available Python 3 binary
+PYTHON_BIN=$(command -v python3.13 || command -v python3.12 || command -v python3.11 || command -v python3 || true)
+if [ -z "$PYTHON_BIN" ]; then
+  echo "ERROR: No Python 3 interpreter found on this instance."
+  exit 1
+fi
+echo "Using Python: $PYTHON_BIN ($($PYTHON_BIN --version))"
+
+"$PYTHON_BIN" -m venv venv
 source venv/bin/activate
 
 echo "[4/7] Installing Python dependencies..."
