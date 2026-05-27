@@ -28,3 +28,4 @@ chmod 600 /opt/welllabs/shared/.env
 echo ".env written from Secrets Manager successfully."
 
 echo "=== Ready for new release ==="
+#
