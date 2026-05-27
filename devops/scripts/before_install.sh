@@ -5,9 +5,7 @@ echo "=== BeforeInstall: Preparing for deployment ==="
 # Create app directories if they don't exist (first deployment)
 mkdir -p /opt/welllabs/{releases,shared,logs}
 
-# Clean up any previous deploy staging directory so CodeDeploy can
-# copy the new revision cleanly during the Install phase.
-rm -rf /tmp/welllabs-deploy
-mkdir -p /tmp/welllabs-deploy
+# Install python3.12-venv so `python3 -m venv` works on this instance
+apt-get install -y -qq python3.12-venv
 
 echo "=== Ready for new release ==="
