@@ -10,9 +10,18 @@ REGION="ap-south-1"
 # Create app directories if they don't exist (first deployment)
 mkdir -p /opt/welllabs/{releases,shared,logs}
 
-# Install jq (needed to parse JSON secret), plus Python and GDAL dependencies
-apt-get update -qq
-apt-get install -y -qq jq python3.12-venv libgdal-dev gdal-bin
+# Install system dependencies
+apt-get update -y
+apt-get install -y jq python3.12-venv libgdal-dev gdal-bin curl
+
+# Install Node.js 20 (includes npm) only if not already present
+if ! command -v node &>/dev/null; then
+  echo "Node.js not found, installing..."
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  apt-get install -y nodejs
+else
+  echo "Node.js already installed: $(node --version)"
+fi
 
 # Fetch secret from AWS Secrets Manager and write it as .env
 echo "Fetching secrets from AWS Secrets Manager..."
@@ -28,4 +37,3 @@ chmod 600 /opt/welllabs/shared/.env
 echo ".env written from Secrets Manager successfully."
 
 echo "=== Ready for new release ==="
-#

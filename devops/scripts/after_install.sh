@@ -19,7 +19,6 @@ cp -r "$DEPLOY_ARCHIVE/." "$RELEASE_DIR/"
 # ──────────────────────────────────────
 # 2. Link shared .env file
 # ──────────────────────────────────────
-
 echo "[2/7] Linking shared .env..."
 ln -sf /opt/welllabs/shared/.env "$RELEASE_DIR/backend/.env"
 
@@ -52,17 +51,21 @@ pip install GDAL==$GDAL_SYS_VERSION -q
 grep -iv "^gdal" requirements.txt | pip install -r /dev/stdin -q
 
 # ──────────────────────────────────────
-# 4. Database Setup & Django migrations
+# 4. Database setup & Django migrations
 # ──────────────────────────────────────
 echo "[5/7] Checking database..."
 if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw ddaapp; then
     echo "Database 'ddaapp' does not exist. Creating it now..."
     sudo -u postgres psql -c "CREATE DATABASE ddaapp;"
     sudo -u postgres psql -d ddaapp -c "CREATE EXTENSION postgis;"
-    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+    # Pull DB password from .env instead of hardcoding it
+    DB_PASS=$(grep ^DB_PASSWORD /opt/welllabs/shared/.env | cut -d= -f2)
+    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '$DB_PASS';"
 fi
 
 echo "Running Django migrations & collectstatic..."
+python manage.py makemigrations --noinput
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
@@ -73,18 +76,33 @@ deactivate
 # ──────────────────────────────────────
 echo "[6/7] Building SvelteKit frontend..."
 cd "$RELEASE_DIR/frontend"
-npm install
+
+# Node is installed system-wide via NodeSource in before_install.sh
+export PATH="/usr/local/bin:/usr/bin:$PATH"
+
+NPM_BIN=$(command -v npm || true)
+if [ -z "$NPM_BIN" ]; then
+  echo "ERROR: npm not found. Ensure before_install.sh ran successfully."
+  exit 1
+fi
+echo "Using npm: $NPM_BIN ($(npm --version)), Node: $(node --version)"
+
+npm ci                  # exact lockfile install — correct for CI/CD
 npm run build
 
 # ──────────────────────────────────────
-# 6. Copy Nginx & systemd configs
+# 6. Nginx & systemd configs
 # ──────────────────────────────────────
 echo "[7/7] Installing Nginx & systemd configs..."
 
-# Nginx config
-cp "$RELEASE_DIR/devops/nginx/welllabs.conf" /etc/nginx/conf.d/welllabs.conf
+# Validate nginx config BEFORE overwriting the live one
+cp "$RELEASE_DIR/devops/nginx/welllabs.conf" /etc/nginx/conf.d/welllabs.conf.new
+if ! nginx -t -c /etc/nginx/conf.d/welllabs.conf.new 2>/dev/null; then
+  # Fall back: try validation via temp include (works on most nginx builds)
+  nginx -t -c "$RELEASE_DIR/devops/nginx/welllabs.conf"
+fi
+mv /etc/nginx/conf.d/welllabs.conf.new /etc/nginx/conf.d/welllabs.conf
 rm -f /etc/nginx/conf.d/default.conf
-nginx -t  # Validate config before proceeding
 
 # Systemd service units
 cp "$RELEASE_DIR/devops/systemd/welllabs-backend.service" /etc/systemd/system/
@@ -92,7 +110,7 @@ cp "$RELEASE_DIR/devops/systemd/welllabs-frontend.service" /etc/systemd/system/
 systemctl daemon-reload
 
 # ──────────────────────────────────────
-# 7. SYMLINK SWAP — instant, atomic
+# 7. Symlink swap — atomic
 # ──────────────────────────────────────
 echo ">>> Swapping symlink to new release: $TIMESTAMP"
 ln -sfn "$RELEASE_DIR" /opt/welllabs/current
@@ -102,6 +120,6 @@ ln -sfn "$RELEASE_DIR" /opt/welllabs/current
 # ──────────────────────────────────────
 echo "Cleaning up old releases..."
 cd /opt/welllabs/releases
-ls -dt */ | tail -n +4 | xargs rm -rf || true
+ls -dt */ | tail -n +4 | xargs rm -rf 2>/dev/null || echo "Warning: cleanup had issues, continuing..."
 
 echo "=== Release $TIMESTAMP ready ==="
