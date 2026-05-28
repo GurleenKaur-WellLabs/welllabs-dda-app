@@ -53,15 +53,17 @@ grep -iv "^gdal" requirements.txt | pip install -r /dev/stdin -q
 # ──────────────────────────────────────
 # 4. Database setup & Django migrations
 # ──────────────────────────────────────
-echo "[5/7] Checking database..."
+# Pull DB password from .env and strip any carriage return (\r) characters
+DB_PASS=$(grep ^DB_PASSWORD /opt/welllabs/shared/.env | cut -d= -f2 | tr -d '\r')
+
+# Unconditionally ensure the database password matches the configuration file
+echo "Configuring database user password..."
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '$DB_PASS';"
+
 if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw ddaapp; then
     echo "Database 'ddaapp' does not exist. Creating it now..."
     sudo -u postgres psql -c "CREATE DATABASE ddaapp;"
     sudo -u postgres psql -d ddaapp -c "CREATE EXTENSION postgis;"
-
-    # Pull DB password from .env instead of hardcoding it
-    DB_PASS=$(grep ^DB_PASSWORD /opt/welllabs/shared/.env | cut -d= -f2)
-    sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD '$DB_PASS';"
 fi
 
 echo "Running Django migrations & collectstatic..."
