@@ -36,9 +36,12 @@ else
   echo "/opt/welllabs/shared/.env verified successfully. Preserving host configurations."
 fi
 
+# Detect deployment archive location dynamically
+DEPLOY_ARCHIVE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
 # Apply ALLOWED_HOSTS dynamically from pipeline if passed
-if [ -f allowed_hosts.txt ]; then
-  EC2_IP=$(cat allowed_hosts.txt | tr -d '\r' | xargs || echo "")
+if [ -f "$DEPLOY_ARCHIVE/allowed_hosts.txt" ]; then
+  EC2_IP=$(cat "$DEPLOY_ARCHIVE/allowed_hosts.txt" | tr -d '\r' | xargs || echo "")
   if [ -n "$EC2_IP" ]; then
     echo "Updating ALLOWED_HOSTS in /opt/welllabs/shared/.env with value from Pipeline: $EC2_IP"
     if grep -q "^ALLOWED_HOSTS=" /opt/welllabs/shared/.env; then
@@ -46,7 +49,11 @@ if [ -f allowed_hosts.txt ]; then
     else
       echo "ALLOWED_HOSTS=localhost,127.0.0.1,$EC2_IP" >> /opt/welllabs/shared/.env
     fi
+  else
+    echo "allowed_hosts.txt exists but value is empty"
   fi
+else
+  echo "allowed_hosts.txt not found — skipping dynamic ALLOWED_HOSTS update"
 fi
 
 echo "=== Ready for new release ==="
