@@ -56,7 +56,7 @@
     try {
 
       const response = await fetch(
-        `/api/watershed/?lat=${selectedLat}&lng=${selectedLng}`
+        `http://127.0.0.1:8000/api/watershed/?lat=${selectedLat}&lng=${selectedLng}`
       );
 
       watershed = await response.json();
