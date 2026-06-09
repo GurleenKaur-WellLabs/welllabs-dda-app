@@ -144,3 +144,4 @@ cd /opt/welllabs/releases
 ls -dt */ | tail -n +4 | xargs rm -rf 2>/dev/null || echo "Warning: cleanup had issues, continuing..."
 
 echo "=== Release $TIMESTAMP ready ==="
+echo "testing"
