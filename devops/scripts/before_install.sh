@@ -49,23 +49,9 @@ else
   echo "Node.js already installed: $(node --version)"
 fi
 
-# Verify that the shared .env file exists and contains valid config (restores defaults if corrupted/empty)
-if [ ! -f /opt/welllabs/shared/.env ] || ! grep -q "^SECRET_KEY=" /opt/welllabs/shared/.env; then
-  echo "Warning: /opt/welllabs/shared/.env is missing or invalid (possibly corrupted by a previous run). Restoring defaults..."
-  cat > /opt/welllabs/shared/.env << 'ENVFILE'
-DB_NAME=ddaapp
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_HOST=localhost
-DB_PORT=5432
-DEBUG=False
-SECRET_KEY=change-me-to-a-secure-key
-ALLOWED_HOSTS=localhost,127.0.0.1
-ENVFILE
-  chmod 600 /opt/welllabs/shared/.env
-else
-  echo "/opt/welllabs/shared/.env verified successfully. Preserving host configurations."
-fi
+# /opt/welllabs/shared/.env is written by after_install.sh via AWS Secrets Manager.
+# Do NOT create or restore a hardcoded .env here — the real secret fetch happens later.
+echo "Shared .env will be written from Secrets Manager during AfterInstall."
 
 # Detect deployment archive location dynamically
 DEPLOY_ARCHIVE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -74,12 +60,7 @@ DEPLOY_ARCHIVE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 if [ -f "$DEPLOY_ARCHIVE/allowed_hosts.txt" ]; then
   EC2_IP=$(cat "$DEPLOY_ARCHIVE/allowed_hosts.txt" | tr -d '\r' | xargs || echo "")
   if [ -n "$EC2_IP" ]; then
-    echo "Updating ALLOWED_HOSTS in /opt/welllabs/shared/.env with value from Pipeline: $EC2_IP"
-    if grep -q "^ALLOWED_HOSTS=" /opt/welllabs/shared/.env; then
-      sed -i "s|^ALLOWED_HOSTS=.*|ALLOWED_HOSTS=localhost,127.0.0.1,$EC2_IP|" /opt/welllabs/shared/.env
-    else
-      echo "ALLOWED_HOSTS=localhost,127.0.0.1,$EC2_IP" >> /opt/welllabs/shared/.env
-    fi
+    echo "ALLOWED_HOSTS value from pipeline: $EC2_IP (applied to .env by after_install.sh)"
   else
     echo "allowed_hosts.txt exists but value is empty"
   fi

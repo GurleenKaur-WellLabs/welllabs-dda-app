@@ -16,9 +16,27 @@ phases:
 
   post_build:
     commands:
-      - echo "Build completed on $(date)"
+      - echo "[POST-BUILD] Validating required CodeBuild env vars..."
+      - |
+        for var in APP_CONFIG_SECRET_ARN PROJECT_NAME; do
+          if [ -z "${!var}" ]; then
+            echo "ERROR: CodeBuild env var '${var}' is not set."
+            echo "Check: Terraform pipeline module has app_secret_arn wired correctly."
+            exit 1
+          fi
+        done
+      - echo "[POST-BUILD] Writing deploy-env with Secrets Manager ARN pointer..."
+      - |
+        # Write ARN pointer file — EC2 AfterInstall reads this and fetches the real secret.
+        # Values are NEVER written here; only the ARN reference travels through the artifact.
+        printf 'APP_CONFIG_SECRET_ARN=%s\nPROJECT_NAME=%s\n' \
+          "${APP_CONFIG_SECRET_ARN}" "${PROJECT_NAME}" > deploy-env
+      - echo "[POST-BUILD] deploy-env written:"
+      - cat deploy-env
+      - echo "[POST-BUILD] Finished at $(date)"
 
 artifacts:
   files:
-    - "**/*"
-  base-directory: "."
+    - '**/*'
+  discard-paths: no
+  base-directory: '.'
