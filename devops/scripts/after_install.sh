@@ -10,6 +10,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RELEASE_DIR="/opt/welllabs/releases/$TIMESTAMP"
 SHARED_DIR="/opt/welllabs/shared"
 SHARED_ENV="${SHARED_DIR}/.env"
+BACKEND_API="https://ai.welllabs.org"
 
 # Derive the deployment archive root from this script's own location:
 # Script is at <archive>/devops/scripts/after_install.sh  →  go up 2 levels.
@@ -206,7 +207,7 @@ npm install --os=linux --cpu=x64
 if [ -f "$DEPLOY_ARCHIVE/allowed_hosts.txt" ]; then
   EC2_IP=$(cat "$DEPLOY_ARCHIVE/allowed_hosts.txt" | tr -d '\r' | xargs)
   if [ -n "$EC2_IP" ]; then
-    export VITE_API_URL="http://$EC2_IP"
+    export VITE_API_URL=$BACKEND_API
     echo "Exported VITE_API_URL=$VITE_API_URL for frontend build"
   fi
 fi
