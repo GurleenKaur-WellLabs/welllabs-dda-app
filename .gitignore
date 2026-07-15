@@ -1,0 +1,25 @@
+# Env
+.env
+backend/.env
+frontend/.env
+
+# Node / frontend
+node_modules/
+.svelte-kit/
+build/
+dist/
+
+# Python / backend
+__pycache__/
+*.pyc
+.venv/
+
+# QField packaging output (local dev)
+backend/packages/
+packages/
+
+# QGIS
+*.qgz
+
+# OS
+.DS_Store

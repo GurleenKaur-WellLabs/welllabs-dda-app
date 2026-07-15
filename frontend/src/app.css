@@ -1,0 +1,72 @@
+@import 'tailwindcss';
+
+@theme {
+	--font-headline: 'Josefin Sans', ui-sans-serif, system-ui, sans-serif;
+	--font-body: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+
+	--color-brand-navy: #00296b;
+	--color-brand-deep: #0d2c4c;
+	--color-brand-blue: #1b75e0;
+	--color-brand-steel: #3969a7;
+	--color-brand-sky: #7dc3ff;
+	--color-brand-pale: #eef5fc;
+	--color-zone: #0d983b;
+	--color-field-note: #d5b443;
+}
+
+body {
+	margin: 0;
+	font-family: var(--font-body);
+	color: var(--color-brand-navy);
+	background-color: #ffffff;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-family: var(--font-headline);
+}
+
+.layer-row-selected {
+	background-color: color-mix(in srgb, var(--color-brand-sky) 15%, transparent);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-brand-blue) 40%, transparent);
+}
+
+.layer-row-dragging {
+	opacity: 0.45;
+}
+
+.layer-drag-handle {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.75rem;
+	color: var(--color-brand-steel);
+	cursor: grab;
+	border-radius: 0.25rem;
+}
+
+.layer-drag-handle:hover {
+	color: var(--color-brand-navy);
+	background-color: color-mix(in srgb, var(--color-brand-sky) 20%, transparent);
+}
+
+.layer-drag-handle:active {
+	cursor: grabbing;
+}
+
+.sidebar-resize-handle {
+	flex-shrink: 0;
+	width: 6px;
+	margin: 0 -2px;
+	cursor: col-resize;
+	background: transparent;
+}
+
+.sidebar-resize-handle:hover,
+.sidebar-resize-active {
+	background: transparent;
+}

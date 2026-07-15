@@ -1,0 +1,159 @@
+# API Reference
+
+Base URL: `http://localhost:8080`
+
+All endpoints under `/api/` require authentication via an HttpOnly session cookie unless noted otherwise. The session is set automatically on login/register.
+
+## Health
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | No | Returns `{"status": "ok"}` |
+
+---
+
+## Accounts Module
+
+### Auth — `/api/accounts/auth`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/register` | No | Create account. Body: `{email, name, password}`. Sets session cookie. Returns user object. |
+| POST | `/login` | No | Authenticate. Body: `{email, password}`. Sets session cookie. Returns user object. |
+| POST | `/logout` | No | Clears session cookie. |
+| GET | `/me` | Yes | Returns the current user from the session. |
+
+### Users — `/api/accounts/users`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/lookup?email={email}` | Yes | Look up a user by email. Used before sharing or inviting. Returns `{id, email, name}`. |
+
+### Organizations — `/api/accounts/orgs`
+
+| Method | Path | Auth | Access | Description |
+|--------|------|------|--------|-------------|
+| GET | `/` | Yes | Any | List orgs the current user belongs to. |
+| POST | `/` | Yes | Any | Create org. Body: `{name}`. Creator becomes admin. |
+| DELETE | `/{org_id}` | Yes | Admin | Delete org. Cascades to remove membership and project access grants. Does not delete projects. |
+| GET | `/{org_id}/members` | Yes | Member | List org members with roles. |
+| POST | `/{org_id}/members` | Yes | Admin | Add member by email. Body: `{email}`. |
+| DELETE | `/{org_id}/members/{member_id}` | Yes | Admin or self | Remove a member. Self-removal (leave) is allowed for any member. Last admin cannot leave. |
+| PATCH | `/{org_id}/members/{member_id}/role` | Yes | Admin | Change role. Body: `{role}` (`admin` or `member`). Last admin cannot be demoted. |
+| GET | `/{org_id}/projects` | Yes | Member | List diagnosis projects shared with this org. |
+
+### QField Cloud — `/api/accounts/qfield`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/connect` | Yes | Link QField Cloud account. Body: `{username, password}`. Proxies login to QField Cloud API and stores the token. |
+| GET | `/status` | Yes | Check connection status. Returns `{connected, qfield_username, expires_at}`. |
+| DELETE | `/disconnect` | Yes | Remove stored QField Cloud token. |
+
+---
+
+## Diagnose Module
+
+### Projects — `/api/diagnose/projects`
+
+| Method | Path | Auth | Access | Description |
+|--------|------|------|--------|-------------|
+| GET | `/` | Yes | Any | List all projects accessible to the current user (owned, shared, or via org). |
+| GET | `/{project_id}` | Yes | Access | Get project details including watershed geometry and counts. |
+| POST | `/` | Yes | Any | Create project. Body: `{name, lng, lat}`. Looks up the watershed at the coordinates. |
+| DELETE | `/{project_id}` | Yes | Owner | Delete project, its S3 media, and all related data. |
+
+### Project Access — `/api/diagnose/projects/{project_id}/access`
+
+All access management endpoints require the caller to be the project owner or a diagnosis admin.
+
+| Method | Path | Access | Description |
+|--------|------|--------|-------------|
+| GET | `/users` | Admin | List users with direct access. Includes role. |
+| POST | `/users` | Admin | Grant user access by email. Body: `{email, role?}`. Default role: `member`. |
+| DELETE | `/users/{user_id}` | Admin | Revoke user access. |
+| PATCH | `/users/{user_id}/role` | Admin | Change user role. Body: `{role}` (`admin` or `member`). |
+| GET | `/orgs` | Admin | List orgs with access. |
+| POST | `/orgs` | Admin | Grant org access. Body: `{org_id}`. Caller must be a member of the org. |
+| DELETE | `/orgs/{org_id}` | Admin | Revoke org access. |
+
+### Layers — `/api/diagnose/layers`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/cog?bbox=&project_id=` | Yes | List COG raster layers with status and bounds. |
+| GET | `/cog/{layer_id}/tiles/WebMercatorQuad/{z}/{x}/{y}` | Yes | Proxy a COG tile, optionally clipped to the project watershed. |
+
+### Watersheds — `/api/diagnose/watersheds`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/lookup` | Yes | Return the watershed polygon for a coordinate. Body: `{lng, lat}`. |
+
+### Observation Zones — `/api/diagnose/observation-zones`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/?project_id={id}` | Yes + access | List zones as GeoJSON FeatureCollection. |
+| POST | `/` | Yes + access | Create zone. Body: `{project_id, geometry, text, description, color}`. |
+| PATCH | `/{zone_id}` | Yes + access | Update zone properties. |
+| DELETE | `/{zone_id}` | Yes + access | Delete zone. |
+
+### Field Notes — `/api/diagnose/field-notes`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/?project_id={id}` | Yes + access | List notes as GeoJSON FeatureCollection. |
+| POST | `/` | Yes + access | Create note. Multipart form: `project_id`, `geometry` (JSON), `text`, optional `photo`, optional `audio`. |
+| PATCH | `/{note_id}` | Yes + access | Update note text or geometry. |
+| DELETE | `/{note_id}` | Yes + access | Delete note and its media from S3. |
+| GET | `/media?key={s3_key}` | Yes | Serve media file (redirects to S3 or streams from local). |
+
+### QField Sync — `/api/diagnose/qfield`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/package` | Yes + access | Build QGIS project and upload to QField Cloud. Uses the caller's QField token. |
+| POST | `/package/stream` | Yes + access | Same as above but returns Server-Sent Events for progress tracking. |
+| POST | `/sync` | Yes + access | Pull changes from QField Cloud, migrate media to S3. |
+| POST | `/sync/stream` | Yes + access | Same as above with SSE progress. |
+| POST | `/cleanup` | Yes + access | Remove orphaned S3 media for a project. |
+
+---
+
+## Design Module (stub)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/design/status` | No | Returns `{"module": "design", "status": "not_implemented"}` |
+
+## Assess Module (stub)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/assess/status` | No | Returns `{"module": "assess", "status": "not_implemented"}` |
+
+---
+
+## Access Control Model
+
+A user can access a diagnosis project if any of these hold:
+
+1. They are the **owner** (`diagnosis.owner_id`)
+2. They have a direct grant in `diagnosis_users`
+3. They belong to an org that has a grant in `diagnosis_orgs`
+
+Management permissions:
+
+| Action | Required |
+|--------|----------|
+| View project, create zones/notes | Any access |
+| Manage sharing (add/remove users/orgs) | Owner or diagnosis admin |
+| Delete project | Owner only |
+
+## Authentication
+
+- Session-based with HttpOnly cookies
+- Cookie name: `dda_session` (configurable)
+- Default TTL: 30 days
+- Set `SESSION_COOKIE_SECURE=true` in production (requires HTTPS)
