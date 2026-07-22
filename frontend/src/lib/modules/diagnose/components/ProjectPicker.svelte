@@ -133,10 +133,10 @@
 	}
 </script>
 
-<div class="flex h-full flex-col bg-white font-body">
+<div class="relative min-h-screen bg-transparent font-body">
 	<ModuleHeader title="Diagnose" subtitle="Select a project or create a new one to begin mapping." />
 
-	<main class="flex-1 overflow-auto p-6">
+	<main class="relative z-10 flex-1 overflow-auto p-6">
 		{#if loading}
 			<p class="text-brand-steel">Loading projects…</p>
 		{:else if showCreate}

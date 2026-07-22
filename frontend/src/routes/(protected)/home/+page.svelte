@@ -53,25 +53,25 @@
 	<title>Dashboard · DDA</title>
 </svelte:head>
 
-<div class="relative min-h-screen bg-void font-body">
+<div class="relative min-h-screen bg-transparent font-body">
 	<ContourBackground intensity="ambient" />
 	<DashboardHeader name={session.user?.name ?? ''} />
 
 	<main class="relative z-10 px-6 py-14 md:px-10">
 		<div class="mx-auto max-w-6xl">
-			<span class="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-faint">Where you left off</span>
+			<span class="font-mono text-[11px] uppercase tracking-[0.2em] text-ink">Where you left off</span>
 			<h1 class="mt-2 font-display text-3xl text-ink md:text-4xl">
 				Welcome, {session.user?.name ?? ''}.
 			</h1>
-			<p class="mt-3 max-w-xl font-body text-[14px] leading-relaxed text-ink-dim">
+			<p class="mt-3 max-w-xl font-body text-[14px] leading-relaxed text-ink">
 				Pick a module below to get started, or continue where you left off.
 			</p>
 
-			<h2 class="mt-12 mb-5 font-mono text-[11px] uppercase tracking-[0.2em] text-ink-faint">
+			<h2 class="mt-12 mb-5 font-mono text-[11px] uppercase tracking-[0.2em] text-ink">
 				Choose a module
 			</h2>
 
-			<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 mt-2">
+			<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 mt-4">
 				{#each modules as mod (mod.id)}
 					<button
 						type="button"

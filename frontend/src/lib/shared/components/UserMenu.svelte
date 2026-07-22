@@ -3,6 +3,9 @@
 	import { onMount } from 'svelte';
 	import { session } from '$lib/shared/session.svelte.js';
 
+	/** @type {{ variant?: 'dark' | 'light' }} */
+	let { variant = 'dark' } = $props();
+
 	let open = $state(false);
 	let menuEl = $state(null);
 
@@ -37,7 +40,9 @@
 	<div class="relative" bind:this={menuEl}>
 		<button
 			type="button"
-			class="flex cursor-pointer items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-white hover:bg-white/20"
+			class="flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 {variant === 'light'
+				? 'border-hairline bg-white/60 text-brand-navy hover:bg-white'
+				: 'border-white/20 bg-white/10 text-white hover:bg-white/20'}"
 			onclick={toggle}
 		>
 			<span
